@@ -16,9 +16,13 @@ export function useColorMode() {
 }
 
 export function ColorModeProvider({ children }: { children: ReactNode }) {
-    const [mode, setMode] = useState<'light' | 'dark'>(
-        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    );
+    // Read theme from localStorage if available, otherwise use system preference
+    const getInitialMode = () => {
+        const saved = localStorage.getItem('themeMode');
+        if (saved === 'light' || saved === 'dark') return saved;
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+    const [mode, setMode] = useState<'light' | 'dark'>(getInitialMode);
 
     const colorMode = useMemo(
         () => ({

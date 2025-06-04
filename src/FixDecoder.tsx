@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import fix40 from './fix-protocol-dictionary-json/fix40/fix40.json';
 import fix41 from './fix-protocol-dictionary-json/fix41/fix41.json';
@@ -9,6 +9,7 @@ import fix50 from './fix-protocol-dictionary-json/fix50/fix50.json';
 import fix50sp1 from './fix-protocol-dictionary-json/fix50-sp1/fix50-sp1.json';
 import fix50sp2 from './fix-protocol-dictionary-json/fix50-sp2/fix50-sp2.json';
 import fixt11 from './fix-protocol-dictionary-json/fixt11/fixt11.json';
+import { useColorMode } from './ColorModeContext';
 
 const FIX_MSG_TYPES: Record<string, string> = { 'A': 'Logon', '0': 'Heartbeat', '1': 'Test Request', '2': 'Resend Request', '3': 'Reject', '4': 'Sequence Reset', '5': 'Logout', '6': 'Indication of Interest', '7': 'Advertisement', '8': 'Execution Report', '9': 'Order Cancel Reject', 'D': 'New Order - Single', 'G': 'Order Cancel Request', 'H': 'Order Cancel/Replace Request' };
 
@@ -58,9 +59,24 @@ function decodeFIXMessage(message: string, delimiter?: '|' | '\u0001') {
 }
 
 export function FixDecoder() {
-    const [input, setInput] = useState('');
+    const [input, setInput] = useState(() => localStorage.getItem('fixInput') || '');
     const [decoded, setDecoded] = useState<Array<{ tag: string, tagName: string, value: string }>>([]);
     const [delimiter, setDelimiter] = useState<'|' | '\u0001'>('|');
+    const { mode } = useColorMode();
+
+    // Save input to localStorage on change
+    // Detect delimiter on paste or input change
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInput(value);
+        localStorage.setItem('fixInput', value);
+        // Detect delimiter: prefer SOH if present, else pipe
+        if (value.includes('\u0001') || value.includes(String.fromCharCode(1))) {
+            setDelimiter('\u0001');
+        } else if (value.includes('|')) {
+            setDelimiter('|');
+        }
+    };
 
     const handleDecode = () => {
         setDecoded(decodeFIXMessage(input, delimiter));
@@ -80,10 +96,16 @@ export function FixDecoder() {
         }
         setDelimiter(newDelimiter);
         setInput(updatedInput);
+        localStorage.setItem('fixInput', updatedInput);
     };
 
     // Helper for showing delimiter name
     const delimiterLabel = delimiter === '|' ? 'Pipe (|)' : 'SOH (ASCII 0x01)';
+
+    // Save theme preference to localStorage when mode changes
+    useEffect(() => {
+        localStorage.setItem('themeMode', mode);
+    }, [mode]);
 
     return (
         <Box maxWidth={600} mx="auto" mt={4} px={1}>
@@ -113,7 +135,7 @@ export function FixDecoder() {
                             : 'Enter FIX message (e.g. 8=FIX.4.2\u00019=12\u000135=A...)'
                     }
                     value={input}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+                    onChange={handleInputChange}
                     sx={{ fontFamily: 'monospace', mb: 2 }}
                 />
                 <Button variant="contained" onClick={handleDecode} sx={{ mb: 2 }}>
