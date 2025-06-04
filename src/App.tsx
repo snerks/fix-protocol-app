@@ -1,9 +1,34 @@
 import './App.css'
+import React from 'react';
 import { FixDecoder } from './FixDecoder';
 import { useColorMode } from './ColorModeContext';
 import { IconButton, useTheme } from '@mui/material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(_error: any, _errorInfo: any) {
+    // You can log errorInfo here if needed
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ color: 'red', padding: 24 }}>
+          <h2>Something went wrong.</h2>
+          <pre>{this.state.error?.toString()}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const { mode, toggleColorMode } = useColorMode();
@@ -20,7 +45,9 @@ function App() {
           {theme.palette.mode === 'dark' ? 'Dark' : 'Light'} mode
         </span>
       </div>
-      <FixDecoder />
+      <ErrorBoundary>
+        <FixDecoder />
+      </ErrorBoundary>
     </>
   )
 }

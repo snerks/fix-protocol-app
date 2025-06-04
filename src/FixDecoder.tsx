@@ -90,6 +90,9 @@ export function FixDecoder() {
 
     const handleDecode = () => {
         try {
+            if (!input.trim().startsWith('8=')) {
+                throw new Error('Input message must start with "8=" (BeginString tag).');
+            }
             const result = decodeFIXMessage(input, delimiter);
             setDecoded(result);
             setDecodeError(null);
