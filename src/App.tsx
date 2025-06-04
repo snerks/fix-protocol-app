@@ -11,7 +11,8 @@ function App() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '1rem', width: '100%' }}>
+      <span style={{ visibility: 'hidden' }}>{mode}</span>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '0 1rem', width: '100%' }}>
         <IconButton onClick={toggleColorMode} color="inherit" aria-label="toggle dark mode">
           {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
         </IconButton>

@@ -59,7 +59,9 @@ function decodeFIXMessage(message: string, delimiter?: '|' | '\u0001') {
 }
 
 export function FixDecoder() {
-    const [input, setInput] = useState(() => localStorage.getItem('fixInput') || '');
+    const sampleMessage = "8=FIX.4.4|9=148|35=D|34=1080|49=TESTBUY1|52=20180920-18:14:19.508|56=TESTSELL1|11=636730640278898634|15=USD|21=2|38=7000|40=1|54=1|55=MSFT|60=20180920-18:14:19.492|10=092";
+
+    const [input, setInput] = useState(() => localStorage.getItem('fixInput') || sampleMessage);
     const [decoded, setDecoded] = useState<Array<{ tag: string, tagName: string, value: string }>>([]);
     const [delimiter, setDelimiter] = useState<'|' | '\u0001'>(() => '\u0001');
     const { mode } = useColorMode();
