@@ -10,6 +10,7 @@ import fix50sp1 from './fix-protocol-dictionary-json/fix50-sp1/fix50-sp1.json';
 import fix50sp2 from './fix-protocol-dictionary-json/fix50-sp2/fix50-sp2.json';
 import fixt11 from './fix-protocol-dictionary-json/fixt11/fixt11.json';
 import { useColorMode } from './ColorModeContext';
+import fieldValueDecodes from './FieldValueDecodes.json';
 
 const FIX_MSG_TYPES: Record<string, string> = { 'A': 'Logon', '0': 'Heartbeat', '1': 'Test Request', '2': 'Resend Request', '3': 'Reject', '4': 'Sequence Reset', '5': 'Logout', '6': 'Indication of Interest', '7': 'Advertisement', '8': 'Execution Report', '9': 'Order Cancel Reject', 'D': 'New Order - Single', 'G': 'Order Cancel Request', 'H': 'Order Cancel/Replace Request' };
 
@@ -49,7 +50,7 @@ function decodeFIXMessage(message: string, delimiter?: '|' | '\u0001') {
     );
     return pairs.map(pair => {
         const [tag, value] = pair.split('=');
-        let tagName = FIX_TAGS[tag] || `Tag ${tag}`;
+        let tagName = FIX_TAGS[tag] || `Tag ${tag} (*)`;
         // Special handling for MsgType (tag 35)
         if (tag === '35' && value && FIX_MSG_TYPES[value]) {
             tagName = `MsgType (${FIX_MSG_TYPES[value]})`;
@@ -110,7 +111,7 @@ export function FixDecoder() {
     }, [mode]);
 
     return (
-        <Box maxWidth={600} mx="auto" mt={4} px={1}>
+        <Box maxWidth={1200} mx="auto" mt={4} px={1}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                 <Typography variant="h5" component="h2" gutterBottom>
                     FIX Protocol Decoder
@@ -144,23 +145,71 @@ export function FixDecoder() {
                     Decode
                 </Button>
                 {decoded.length > 0 && (
-                    <TableContainer component={Paper} sx={{ mt: 2 }}>
-                        <Table size="small">
+                    <TableContainer component={Paper} sx={{ mt: 2, width: '100%', overflowX: 'auto' }}>
+                        <Typography variant="h6" sx={{ p: 2, pb: 0 }}>
+                            {(() => {
+                                const msgTypeField = decoded.find(field => field.tag === '35');
+                                const msgTypeValue = msgTypeField?.value;
+                                // const msgTypeName = msgTypeValue && FIX_MSG_TYPES[msgTypeValue];
+                                let decodedMessageTypeName = '';
+                                // Tag is string, but keys in fieldById are stringified numbers
+                                const fieldDef = (fieldValueDecodes.fieldById as Record<string, any>)[35];
+                                if (msgTypeValue && fieldDef && fieldDef.values && msgTypeValue in fieldDef.values) {
+                                    decodedMessageTypeName = fieldDef.values[msgTypeValue];
+                                }
+                                return decodedMessageTypeName
+                                    ? `${decodedMessageTypeName}`
+                                    : 'Unknown Message Type';
+                            })()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ p: 2, pt: 0, color: 'text.secondary' }}>
+                            * means the tag is not known in this FIX version
+                        </Typography>
+                        <Table size="small" sx={{ minWidth: 700 }}>
                             <TableHead>
                                 <TableRow>
                                     <TableCell>Tag</TableCell>
                                     <TableCell>Name</TableCell>
                                     <TableCell>Value</TableCell>
+                                    <TableCell>Decoded Value</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {decoded.map(({ tag, tagName, value }) => (
-                                    <TableRow key={tag + value}>
-                                        <TableCell>{tag}</TableCell>
-                                        <TableCell>{tagName}</TableCell>
-                                        <TableCell sx={{ fontFamily: 'monospace' }}>{value}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {decoded.map(({ tag, tagName, value }) => {
+                                    if (tag === '828') {
+                                        console.log('TrdType');
+                                    }
+
+                                    let decodedValue = '';
+                                    // Tag is string, but keys in fieldById are stringified numbers
+                                    const fieldDef = (fieldValueDecodes.fieldById as Record<string, any>)[tag];
+
+                                    const fieldHasValues = fieldDef && fieldDef.values && Object.keys(fieldDef.values).length > 0;
+
+                                    // if (fieldDef && fieldDef.values && value in fieldDef.values) {
+                                    //     decodedValue = fieldDef.values[value] || `Unknown value for tag ${tag}`;
+                                    // }
+
+                                    // decodedValue = fieldHasValues ? value in fieldDef.values ? fieldDef.values[value] : `Unknown value for tag ${tag}` : value;
+
+                                    if (fieldHasValues) {
+                                        decodedValue = value in fieldDef.values ? fieldDef.values[value] : `Unknown value for tag ${tag}`;
+                                    }
+
+                                    const tagNameNotKnownInThisVersion = tagName.includes('*');
+                                    const tagNameTooltip = tagNameNotKnownInThisVersion ? `Tag ${tag} is not known in this FIX version` : '';
+
+                                    const tagNameToUse = tagName.includes('*') ? `${fieldDef.name} (*)` : tagName;
+
+                                    return (
+                                        <TableRow key={tag + value}>
+                                            <TableCell>{tag}</TableCell>
+                                            <TableCell title={tagNameTooltip}>{tagNameToUse}</TableCell>
+                                            <TableCell sx={{ fontFamily: 'monospace' }}>{value}</TableCell>
+                                            <TableCell>{decodedValue}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
