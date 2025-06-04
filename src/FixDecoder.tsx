@@ -31,6 +31,11 @@ function getDictionaryByVersion(version: string) {
 
 // Update decodeFIXMessage to accept delimiter as argument
 function decodeFIXMessage(message: string, delimiter?: '|' | '\u0001') {
+    if (!message) {
+        throw new Error('Input message cannot be empty.');
+    }
+
+
     const delim = delimiter || (message.includes('|') ? '|' : '\u0001');
     // Escape delimiter for regex if needed
     const regexDelim = delim === '|' ? '\\|' : delim;
@@ -64,6 +69,7 @@ export function FixDecoder() {
 
     const [input, setInput] = useState(() => localStorage.getItem('fixInput') || sampleMessage);
     const [decoded, setDecoded] = useState<Array<{ tag: string, tagName: string, value: string }>>([]);
+    const [decodeError, setDecodeError] = useState<string | null>(null);
     const [delimiter, setDelimiter] = useState<'|' | '\u0001'>(() => '\u0001');
     const { mode } = useColorMode();
 
@@ -73,6 +79,7 @@ export function FixDecoder() {
         const value = e.target.value;
         setInput(value);
         localStorage.setItem('fixInput', value);
+        setDecodeError(null); // Clear error on input change
         // Detect delimiter: prefer SOH if present, else pipe
         if (value.includes('\u0001') || value.includes(String.fromCharCode(1))) {
             setDelimiter('\u0001');
@@ -82,7 +89,14 @@ export function FixDecoder() {
     };
 
     const handleDecode = () => {
-        setDecoded(decodeFIXMessage(input, delimiter));
+        try {
+            const result = decodeFIXMessage(input, delimiter);
+            setDecoded(result);
+            setDecodeError(null);
+        } catch (err: any) {
+            setDecoded([]);
+            setDecodeError(err?.message || 'An error occurred during decoding.');
+        }
     };
 
     const handleDelimiterToggle = () => {
@@ -144,7 +158,12 @@ export function FixDecoder() {
                 <Button variant="contained" onClick={handleDecode} sx={{ mb: 2 }}>
                     Decode
                 </Button>
-                {decoded.length > 0 && (
+                {decodeError && (
+                    <Typography color="error" sx={{ mt: 1, mb: 2 }}>
+                        {decodeError}
+                    </Typography>
+                )}
+                {decoded.length > 0 && !decodeError && (
                     <TableContainer component={Paper} sx={{ mt: 2, width: '100%', overflowX: 'auto' }}>
                         <Typography variant="h6" sx={{ p: 2, pb: 0 }}>
                             {(() => {
