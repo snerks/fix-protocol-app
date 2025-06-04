@@ -61,7 +61,7 @@ function decodeFIXMessage(message: string, delimiter?: '|' | '\u0001') {
 export function FixDecoder() {
     const [input, setInput] = useState(() => localStorage.getItem('fixInput') || '');
     const [decoded, setDecoded] = useState<Array<{ tag: string, tagName: string, value: string }>>([]);
-    const [delimiter, setDelimiter] = useState<'|' | '\u0001'>('|');
+    const [delimiter, setDelimiter] = useState<'|' | '\u0001'>(() => '\u0001');
     const { mode } = useColorMode();
 
     // Save input to localStorage on change
